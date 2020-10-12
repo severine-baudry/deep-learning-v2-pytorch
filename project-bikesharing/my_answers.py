@@ -166,7 +166,7 @@ class NeuralNetwork(object):
         final_inputs = None # signals into final output layer
         final_outputs = None # signals from final output layer 
         final_outputs = np.empty(features.shape[0])
-        for i,X in enumerate(features.values):
+        for i,X in enumerate(features):
             outs, hiddens = self.forward_pass_train(X)
             final_outputs[i] = outs
         return final_outputs
