@@ -1,6 +1,21 @@
 import numpy as np
 
-
+def to_1x1_matrix(y):
+    '''
+    convert a scalar or a single element vector to a 1x1 matrix
+    '''
+    try :
+        s = y.shape
+    except Exception :
+        # y is a scalar
+        return np.array([[y]])
+    else :
+        if len(s) > 2 :
+            raise ValueError("Convert y to 1x1 matrix : {} dimensions".format(s))
+        else :
+            return y[None,:]
+        
+    
 class NeuralNetwork(object):
     def __init__(self, input_nodes, hidden_nodes, output_nodes, learning_rate):
         # Set number of nodes in input, hidden and output layers.
@@ -20,7 +35,7 @@ class NeuralNetwork(object):
         #
         # Note: in Python, you can define a function with a lambda expression,
         # as shown below.
-        self.activation_function = lambda x : 0  # Replace 0 with your sigmoid calculation.
+        self.activation_function = lambda x : 1. / (1. + np.exp(-x) )
         
         ### If the lambda code above is not something you're familiar with,
         # You can uncomment out the following three lines and put your 
@@ -64,12 +79,12 @@ class NeuralNetwork(object):
         #### Implement the forward pass here ####
         ### Forward pass ###
         # TODO: Hidden layer - Replace these values with your calculations.
-        hidden_inputs = None # signals into hidden layer
-        hidden_outputs = None # signals from hidden layer
+        hidden_inputs = np.matmul(X, self.weights_input_to_hidden)
+        hidden_outputs = self.activation_function(hidden_inputs) # signals from hidden layer
 
         # TODO: Output layer - Replace these values with your calculations.
-        final_inputs = None # signals into final output layer
-        final_outputs = None # signals from final output layer
+        final_inputs = np.matmul(hidden_outputs, self.weights_hidden_to_output)
+        final_outputs = final_inputs
         
         return final_outputs, hidden_outputs
 
@@ -86,22 +101,36 @@ class NeuralNetwork(object):
         '''
         #### Implement the backward pass here ####
         ### Backward pass ###
-
-        # TODO: Output error - Replace this value with your calculations.
-        error = None # Output layer error is the difference between desired target and actual output.
+        # use matrix instead of vector
+        X = X[None, :] # row vector = 1xn0 matrix
+        y = to_1x1_matrix(y)
+        # now row vector : 1xn1
+        hidden_outputs = hidden_outputs.reshape(1, self.hidden_nodes)
         
+        
+        # TODO: Output error - Replace this value with your calculations.
+        # Output layer error is the difference between desired target and actual output.
+        # this is the NEGATIVE of the gradient of the cost wrt the estimated y 
+        # (hence +grad instead of -grad in the weights update)
+        # -grad_y = - dMSE/dy = y_true -y_estimate
+        error = y - final_outputs
         # TODO: Calculate the hidden layer's contribution to the error
-        hidden_error = None
+        # grad_H1 = grad_y * dy/dA1 * dA1/ dH1
+        # dy/dA1 = W_1_2.T   # same shape as A1
+        # dA1/dH1 = A1 .* (1-A1)  # sigmoid derication
+        hidden_error = error * self.weights_hidden_to_output.T * hidden_outputs * (1-hidden_outputs)
         
         # TODO: Backpropagated error terms - Replace these values with your calculations.
-        output_error_term = None
+        # grad_W_1_2 = dMSE/dy * dy/dW_1_2
+        # dy/dW1_2 = A1.T   # same shape as W1_2 
+        output_error_term = error * hidden_outputs.T
         
-        hidden_error_term = None
+        hidden_error_term = np.matmul(X.T, hidden_error)
         
         # Weight step (input to hidden)
-        delta_weights_i_h += None
+        delta_weights_i_h += hidden_error_term
         # Weight step (hidden to output)
-        delta_weights_h_o += None
+        delta_weights_h_o += output_error_term
         return delta_weights_i_h, delta_weights_h_o
 
     def update_weights(self, delta_weights_i_h, delta_weights_h_o, n_records):
@@ -114,9 +143,10 @@ class NeuralNetwork(object):
             n_records: number of records
 
         '''
-        self.weights_hidden_to_output += None # update hidden-to-output weights with gradient descent step
-        self.weights_input_to_hidden += None # update input-to-hidden weights with gradient descent step
-
+        # update hidden-to-output weights with gradient descent step
+        self.weights_hidden_to_output += self.lr * delta_weights_h_o /n_records
+        # update input-to-hidden weights with gradient descent step
+        self.weights_input_to_hidden += self.lr * delta_weights_i_h /n_records
     def run(self, features):
         ''' Run a forward pass through the network with input features 
         
@@ -127,13 +157,18 @@ class NeuralNetwork(object):
         
         #### Implement the forward pass here ####
         # TODO: Hidden layer - replace these values with the appropriate calculations.
-        hidden_inputs = None # signals into hidden layer
-        hidden_outputs = None # signals from hidden layer
+        # signals into hidden layer
+        hidden_inputs = None 
+        # signals from hidden layer
+        hidden_outputs = None 
         
         # TODO: Output layer - Replace these values with the appropriate calculations.
         final_inputs = None # signals into final output layer
         final_outputs = None # signals from final output layer 
-        
+        final_outputs = np.empty(features.shape[0])
+        for i,X in enumerate(features.values):
+            outs, hiddens = self.forward_pass_train(X)
+            final_outputs[i] = outs
         return final_outputs
 
 
