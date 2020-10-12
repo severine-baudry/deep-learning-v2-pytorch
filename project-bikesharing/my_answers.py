@@ -60,8 +60,11 @@ class NeuralNetwork(object):
         delta_weights_i_h = np.zeros(self.weights_input_to_hidden.shape)
         delta_weights_h_o = np.zeros(self.weights_hidden_to_output.shape)
         for X, y in zip(features, targets):
-            
+            X = X[None, :]
+            y = to_1x1_matrix(y)
+            #print(X.shape, y.shape)
             final_outputs, hidden_outputs = self.forward_pass_train(X)  # Implement the forward pass function below
+            #print(final_outputs.shape, hidden_outputs.shape)
             # Implement the backproagation function below
             delta_weights_i_h, delta_weights_h_o = self.backpropagation(final_outputs, hidden_outputs, X, y, 
                                                                         delta_weights_i_h, delta_weights_h_o)
@@ -102,8 +105,8 @@ class NeuralNetwork(object):
         #### Implement the backward pass here ####
         ### Backward pass ###
         # use matrix instead of vector
-        X = X[None, :] # row vector = 1xn0 matrix
-        y = to_1x1_matrix(y)
+        #X = X[None, :] # row vector = 1xn0 matrix
+        #y = to_1x1_matrix(y)
         # now row vector : 1xn1
         hidden_outputs = hidden_outputs.reshape(1, self.hidden_nodes)
         
@@ -165,17 +168,14 @@ class NeuralNetwork(object):
         # TODO: Output layer - Replace these values with the appropriate calculations.
         final_inputs = None # signals into final output layer
         final_outputs = None # signals from final output layer 
-        final_outputs = np.empty(features.shape[0])
-        for i,X in enumerate(features):
-            outs, hiddens = self.forward_pass_train(X)
-            final_outputs[i] = outs
+        final_outputs, hiddens = self.forward_pass_train(features)
         return final_outputs
 
 
 #########################################################
 # Set your hyperparameters here
 ##########################################################
-iterations = 100
-learning_rate = 0.1
-hidden_nodes = 2
+iterations = 3000
+learning_rate = 1
+hidden_nodes = 10
 output_nodes = 1
